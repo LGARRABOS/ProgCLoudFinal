@@ -1,0 +1,77 @@
+---
+# Met à jour le code source du handler Lambda.
+# Reconstruit le package (handler.py + Pillow) puis pousse le nouveau code
+# via la collection amazon.aws, en assumant le rôle IAM restreint.
+#
+# Usage :
+#   ansible-galaxy collection install -r requirements.yml
+#   ansible-playbook update_lambda.yml \
+#     -e function_name=ynov-image-to-pdf \
+#     -e assume_role_arn=arn:aws:iam::123456789012:role/ynov-iac-restricted
+
+- name: Mise a jour du code source de la Lambda
+  hosts: local
+  gather_facts: false
+
+  vars:
+    aws_region: "eu-west-3"
+    function_name: "ynov-image-to-pdf"
+    assume_role_arn: "arn:aws:iam::123456789012:role/ynov-iac-restricted"
+    lambda_src_dir: "../lambda"
+    build_dir: "/tmp/ynov-lambda-build"
+    package_path: "/tmp/ynov-lambda-build/lambda_package.zip"
+
+  tasks:
+    - name: Assume du role IAM restreint
+      amazon.aws.sts_assume_role:
+        role_arn: "{{ assume_role_arn }}"
+        role_session_name: "ansible-ynov-iac-2025"
+        region: "{{ aws_region }}"
+      register: assumed_role
+
+    - name: Preparation du repertoire de build
+      ansible.builtin.file:
+        path: "{{ build_dir }}/package"
+        state: directory
+        mode: "0755"
+
+    - name: Installation des dependances Python compatibles Lambda
+      ansible.builtin.command:
+        cmd: >-
+          pip install
+          --platform manylinux2014_x86_64
+          --implementation cp
+          --python-version 3.11
+          --only-binary=:all:
+          --target {{ build_dir }}/package
+          -r {{ lambda_src_dir }}/requirements.txt
+      changed_when: true
+
+    - name: Copie du handler applicatif
+      ansible.builtin.copy:
+        src: "{{ lambda_src_dir }}/handler.py"
+        dest: "{{ build_dir }}/package/handler.py"
+        mode: "0644"
+
+    - name: Creation de l'archive de deploiement
+      community.general.archive:
+        path: "{{ build_dir }}/package/*"
+        dest: "{{ package_path }}"
+        format: zip
+
+    - name: Mise a jour du code de la fonction Lambda
+      amazon.aws.lambda:
+        name: "{{ function_name }}"
+        state: present
+        runtime: "python3.11"
+        handler: "handler.handler"
+        zip_file: "{{ package_path }}"
+        region: "{{ aws_region }}"
+        access_key: "{{ assumed_role.sts_creds.access_key }}"
+        secret_key: "{{ assumed_role.sts_creds.secret_key }}"
+        session_token: "{{ assumed_role.sts_creds.session_token }}"
+      register: lambda_update
+
+    - name: Resultat
+      ansible.builtin.debug:
+        msg: "Fonction {{ function_name }} mise a jour (revision {{ lambda_update.configuration.revision_id | default('n/a') }})"
