@@ -1,7 +1,7 @@
 # Terraform
 **/.terraform/*
-*.tfstate
-*.tfstate.*
+#*.tfstate
+#*.tfstate.*
 crash.log
 tfplan
 *.tfvars
@@ -17,3 +17,5 @@ __pycache__/
 
 # Ansible
 *.retry
+
+crypt.key
