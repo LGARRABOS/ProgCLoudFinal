@@ -1,0 +1,6 @@
+assume_role_arn = "arn:aws:iam::738563260931:role/role_etudiants"
+project_prefix  = "lgarrabos"
+aws_region      = "eu-west-3"
+
+# Si l'Assume Role échoue, demandez l'ARN exact à votre intervenant Ynov.
+# Pour tester localement sans Assume Role (si autorisé), laissez assume_role_arn = ""

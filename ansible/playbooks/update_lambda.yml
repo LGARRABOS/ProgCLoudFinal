@@ -1,0 +1,41 @@
+---
+- name: Mettre à jour le code source de la Lambda
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Assumer le rôle IAM restreint
+      amazon.aws.sts_assume_role:
+        role_arn: "{{ assume_role_arn }}"
+        role_session_name: ansible-lambda-update
+        region: "{{ aws_region }}"
+      register: assumed_role
+      when: assume_role_arn | length > 0
+
+    - name: Construire le package Lambda
+      ansible.builtin.command:
+        cmd: python {{ playbook_dir }}/../../terraform/scripts/build_lambda.py {{ lambda_src_dir }} {{ playbook_dir }}/../build
+      changed_when: true
+
+    - name: Archiver le package Lambda
+      community.general.archive:
+        path: "{{ playbook_dir }}/../build"
+        dest: "{{ lambda_zip_path }}"
+        format: zip
+
+    - name: Mettre à jour le code de la fonction Lambda
+      amazon.aws.lambda:
+        name: "{{ lambda_function_name }}"
+        region: "{{ aws_region }}"
+        zip_file: "{{ lambda_zip_path }}"
+        handler: handler.handler
+        runtime: python3.11
+        state: present
+        aws_access_key: "{{ assumed_role.sts_creds.access_key if (assume_role_arn | length > 0) else omit }}"
+        aws_secret_key: "{{ assumed_role.sts_creds.secret_key if (assume_role_arn | length > 0) else omit }}"
+        aws_session_token: "{{ assumed_role.sts_creds.session_token if (assume_role_arn | length > 0) else omit }}"
+      register: lambda_update
+
+    - name: Afficher le résultat
+      ansible.builtin.debug:
+        msg: "Lambda {{ lambda_function_name }} mise à jour — version {{ lambda_update.version }}"
