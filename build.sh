@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
 #
 # Construit le package de déploiement de la Lambda.
-# Pillow contient des binaires natifs : on force la plateforme Amazon Linux
+# On force la plateforme Amazon Linux
 # (manylinux2014_x86_64) et Python 3.11 pour rester compatible avec le runtime.
-#
-# À exécuter AVANT `terraform plan/apply` (Terraform lit le zip au moment du plan).
-#
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -49,7 +49,7 @@ resource "aws_iam_role_policy" "lambda" {
   policy = data.aws_iam_policy_document.lambda.json
 }
 
-# --- Groupe de logs (rétention explicite) ----------------------------------
+# --- Groupe de logs (rétention de 14 jours) ----------------------------------
 
 resource "aws_cloudwatch_log_group" "lambda" {
   name              = "/aws/lambda/${var.function_name}"

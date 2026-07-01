@@ -30,10 +30,10 @@ appliqué automatiquement via `default_tags` du provider AWS.
 
 ```
 ynov-iac-2025/
-├── build.sh                     # construit le package Lambda (Pillow + handler)
+├── build.sh                     # construit le package pour le Lambda
 ├── lambda/
-│   ├── handler.py               # code applicatif (conversion image -> PDF)
-│   └── requirements.txt         # Pillow
+│   ├── handler.py               # code applicatif (conversion de divers fichiers en -> PDF)
+│   └── requirements.txt
 ├── terraform/
 │   ├── providers.tf             # provider AWS + assume-role + default_tags
 │   ├── versions.tf
@@ -42,15 +42,15 @@ ynov-iac-2025/
 │   ├── outputs.tf
 │   ├── terraform.tfvars.example
 │   └── modules/
-│       ├── s3/                  # module réutilisable : 2 buckets durcis
-│       └── lambda/              # module réutilisable : fonction + IAM + logs
+│       ├── s3/                  # création de 2 buckets
+│       └── lambda/              # fonction + IAM + logs
 ├── ansible/
-│   ├── update_lambda.yml        # mise à jour du code du handler
+│   ├── update_lambda.yml        # packaging du code python => depôt du package dans le lambda
 │   ├── requirements.yml
 │   ├── ansible.cfg
 │   └── inventory.ini
 └── .github/workflows/
-    └── terraform.yaml           # fmt · validate · plan · Checkov · Infracost · ansible-lint
+    └── terraform.yaml
 ```
 
 ---
@@ -58,7 +58,7 @@ ynov-iac-2025/
 ## Prérequis
 
 - Terraform ≥ 1.6, AWS CLI v2, Python 3.11, Ansible
-- Les identifiants fournis par l'intervenant (Access Key / Secret Key)
+- Les identifiants de connexion
 
 ```bash
 export AWS_ACCESS_KEY_ID="AKIA..."
@@ -77,12 +77,12 @@ Logs — toujours avec le tag `Project = ynov-iac-2025`.
 > car Terraform lit le zip au moment du plan.
 
 ```bash
-# 1. Construire le package (Pillow compatible Amazon Linux + handler.py)
+# 1. Construire le package
 ./build.sh
 
 # 2. Configurer les variables
 cd terraform
-cp terraform.tfvars.example terraform.tfvars   # puis éditer
+cat terraform.tfvars   # fichier a éditer si besoin
 
 # 3. Déployer
 terraform init
@@ -102,12 +102,11 @@ Après modification de `lambda/handler.py` :
 cd ansible
 ansible-galaxy collection install -r requirements.yml
 ansible-playbook update_lambda.yml \
-  -e function_name=ynov-image-to-pdf \
-  -e assume_role_arn="arn:aws:iam::123456789012:role/ynov-iac-restricted"
+  -e lambda_exec_role="arn:aws:iam::738563260931:role/ynov-image-to-pdf-role" \
+  -e assume_role_arn="arn:aws:iam::738563260931:role/role_etudiants"
 ```
 
-Le playbook reconstruit le package, assume le rôle IAM puis pousse le nouveau code
-via `amazon.aws.lambda`.
+Le playbook reconstruit le package, assume le rôle IAM puis pousse le nouveau code (sous forme d'archive) via `amazon.aws.lambda`.
 
 ---
 
@@ -115,8 +114,8 @@ via `amazon.aws.lambda`.
 
 ```bash
 # Récupérer les noms de buckets depuis les outputs
-SRC=$(terraform -chdir=terraform output -raw source_bucket)
-DST=$(terraform -chdir=terraform output -raw destination_bucket)
+SRC=$(tofu -chdir=terraform output -raw source_bucket)
+DST=$(tofu -chdir=terraform output -raw destination_bucket)
 
 # 1. Uploader une image de test dans le bucket source
 aws s3 cp ./exemple.jpg "s3://$SRC/exemple.jpg"
@@ -125,7 +124,7 @@ aws s3 cp ./exemple.jpg "s3://$SRC/exemple.jpg"
 aws s3 ls "s3://$DST/"
 
 # 3. Télécharger le PDF produit
-aws s3 cp "s3://$DST/exemple-xxxxxxxx.pdf" ./resultat.pdf
+aws s3 cp "s3://$DST/XXXXXXX.pdf" ./resultat.pdf
 
 # 4. Consulter les logs de la Lambda
 aws logs tail /aws/lambda/ynov-image-to-pdf --follow

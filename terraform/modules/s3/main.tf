@@ -8,7 +8,7 @@ resource "aws_s3_bucket" "destination" {
   bucket = var.destination_bucket_name
 }
 
-# --- Blocage de l'accès public (bonne pratique / Checkov) ------------------
+# --- Blocage de l'accès public ------------------
 
 resource "aws_s3_bucket_public_access_block" "source" {
   bucket                  = aws_s3_bucket.source.id
@@ -26,7 +26,7 @@ resource "aws_s3_bucket_public_access_block" "destination" {
   restrict_public_buckets = true
 }
 
-# --- Chiffrement au repos --------------------------------------------------
+# --- Chiffrement --------------------------------------------------
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "source" {
   bucket = aws_s3_bucket.source.id
