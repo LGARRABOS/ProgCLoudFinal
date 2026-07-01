@@ -1,0 +1,2 @@
+# boto3 est déjà présent dans le runtime Lambda, inutile de le packager.
+Pillow==10.4.0

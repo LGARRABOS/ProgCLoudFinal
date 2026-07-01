@@ -1,0 +1,104 @@
+name: IaC CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION: eu-west-3
+  TF_WORKING_DIR: terraform
+
+jobs:
+  terraform:
+    name: Terraform + Securite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.5"
+
+      - name: Build du package Lambda
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Terraform fmt
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init -backend=false
+
+      - name: Terraform validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate
+
+      # plan et infracost necessitent les secrets AWS configures dans le repo
+      - name: Terraform plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          terraform plan -input=false -out=tfplan \
+            -var="assume_role_arn=${{ secrets.ASSUME_ROLE_ARN }}" \
+            -var="source_bucket_name=${{ vars.SOURCE_BUCKET_NAME }}" \
+            -var="destination_bucket_name=${{ vars.DESTINATION_BUCKET_NAME }}"
+        continue-on-error: true
+
+      - name: Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: ${{ env.TF_WORKING_DIR }}
+          framework: terraform
+          soft_fail: true
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Infracost breakdown
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          infracost breakdown --path . \
+            --terraform-var="assume_role_arn=${{ secrets.ASSUME_ROLE_ARN }}" \
+            --terraform-var="source_bucket_name=${{ vars.SOURCE_BUCKET_NAME }}" \
+            --terraform-var="destination_bucket_name=${{ vars.DESTINATION_BUCKET_NAME }}"
+        continue-on-error: true
+
+  ansible-lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ansible-lint
+        run: pip install ansible-lint
+
+      - name: Install collections
+        run: ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: Run ansible-lint
+        run: ansible-lint ansible/

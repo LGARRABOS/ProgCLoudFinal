@@ -1,0 +1,19 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+tfplan
+*.tfvars
+!*.tfvars.example
+
+# Build Lambda
+build/
+*.zip
+
+# Python
+__pycache__/
+*.pyc
+
+# Ansible
+*.retry
