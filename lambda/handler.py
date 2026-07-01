@@ -26,7 +26,7 @@ SUPPORTED = (".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp")
 
 
 def handler(event, context):
-    for record in event.get("Records", []):
+    for record in event.get("Records", []):  # Test pour Ansible
         src_bucket = record["s3"]["bucket"]["name"]
         # Les clés S3 sont url-encodées dans l'événement
         src_key = unquote_plus(record["s3"]["object"]["key"])
