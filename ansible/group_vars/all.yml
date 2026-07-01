@@ -1,7 +1,0 @@
----
-aws_region: eu-west-3
-assume_role_arn: arn:aws:iam::738563260931:role/role_etudiants
-lambda_function_name: lgarrabos-image-to-pdf
-lambda_role_arn: arn:aws:iam::738563260931:role/lgarrabos-image-to-pdf-role
-lambda_src_dir: "{{ playbook_dir }}/../../lambda"
-lambda_zip_path: "{{ playbook_dir }}/../lambda_deploy.zip"
