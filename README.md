@@ -138,4 +138,7 @@ Le workflow [`.github/workflows/terraform.yaml`](.github/workflows/terraform.yam
 
 ## Auteur
 
-Projet réalisé dans le cadre du module **Programmation pour le Cloud** — Ynov Bordeaux 2025.
+Projet réalisé dans le cadre du module **Programmation pour le Cloud** — Ynov Bordeaux 2026.
+Luc GARRABOS
+Fabien GARCIA
+Maxence GILLES
