@@ -37,9 +37,9 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform fmt -check -recursive
 
-      - name: Terraform init
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init -backend=false
+      # - name: Terraform init
+      #   working-directory: ${{ env.TF_WORKING_DIR }}
+      #   run: terraform init -backend=false
 
       - name: Terraform validate
         working-directory: ${{ env.TF_WORKING_DIR }}

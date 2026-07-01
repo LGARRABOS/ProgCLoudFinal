@@ -20,6 +20,7 @@
     lambda_src_dir: "../lambda"
     build_dir: "/tmp/ynov-lambda-build"
     package_path: "/tmp/ynov-lambda-build/lambda_package.zip"
+    lambda_exec_role: "arn:aws:iam::738563260931:role/ynov-image-to-pdf-role"
 
   tasks:
     - name: Assume du role IAM restreint
@@ -58,6 +59,7 @@
         path: "{{ build_dir }}/package/*"
         dest: "{{ package_path }}"
         format: zip
+        mode: "0644"
 
     - name: Mise a jour du code de la fonction Lambda
       amazon.aws.lambda:
@@ -67,6 +69,7 @@
         handler: "handler.handler"
         zip_file: "{{ package_path }}"
         region: "{{ aws_region }}"
+        role: "{{ lambda_exec_role }}"
         access_key: "{{ assumed_role.sts_creds.access_key }}"
         secret_key: "{{ assumed_role.sts_creds.secret_key }}"
         session_token: "{{ assumed_role.sts_creds.session_token }}"
