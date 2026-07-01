@@ -184,5 +184,5 @@ jobs:
         working-directory: ansible
         run: |
           ansible-playbook update_lambda.yml \
-            -e assume_role_arn="${{ secrets.ASSUME_ROLE_ARN }}" \
-            -e lambda_exec_role="${{ vars.LAMBDA_EXEC_ROLE }}"
+            -e assume_role_arn="arn:aws:iam::738563260931:role/role_etudiants" \
+            -e lambda_exec_role="arn:aws:iam::738563260931:role/ynov-image-to-pdf-role"
