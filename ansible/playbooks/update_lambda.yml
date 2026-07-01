@@ -22,6 +22,7 @@
         path: "{{ playbook_dir }}/../build"
         dest: "{{ lambda_zip_path }}"
         format: zip
+        mode: "0644"
 
     - name: Mettre à jour le code de la fonction Lambda
       amazon.aws.lambda:
@@ -30,6 +31,7 @@
         zip_file: "{{ lambda_zip_path }}"
         handler: handler.handler
         runtime: python3.11
+        role: "{{ lambda_role_arn }}"
         state: present
         aws_access_key: "{{ assumed_role.sts_creds.access_key if (assume_role_arn | length > 0) else omit }}"
         aws_secret_key: "{{ assumed_role.sts_creds.secret_key if (assume_role_arn | length > 0) else omit }}"
