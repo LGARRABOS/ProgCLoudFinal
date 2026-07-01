@@ -155,10 +155,7 @@ jobs:
       - name: Terraform apply
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          terraform apply -auto-approve -input=false \
-            -var="assume_role_arn=${{ secrets.ASSUME_ROLE_ARN }}" \
-            -var="source_bucket_name=${{ vars.SOURCE_BUCKET_NAME }}" \
-            -var="destination_bucket_name=${{ vars.DESTINATION_BUCKET_NAME }}"
+          terraform apply -auto-approve -input=false
 
   update-lambda:
     name: Ansible - Update Lambda
