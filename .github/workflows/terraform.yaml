@@ -69,13 +69,12 @@ jobs:
           soft_fail: true
 
       - name: Setup Infracost
-        if: ${{ secrets.INFRACOST_API_KEY != '' }}
         uses: infracost/actions/setup@v3
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
+        continue-on-error: true
 
       - name: Infracost breakdown
-        if: ${{ secrets.INFRACOST_API_KEY != '' }}
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           infracost breakdown --path=. \
